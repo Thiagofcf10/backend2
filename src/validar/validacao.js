@@ -1,32 +1,92 @@
-const validateFieldTitle = (request, response, next) => {
-  const { body } = request;
+// Validador genérico para campo obrigatório
+const validarCampoObrigatorio = (campo, nomeCampo = campo) => {
+  return (request, response, next) => {
+    const { body } = request;
 
-  if (body.title === undefined) {
-    return response.status(400).json({ message: 'The field "title" is required' });
-  }
+    if (body[campo] === undefined) {
+      return response.status(400).json({ message: `${nomeCampo} não foi enviado` });
+    }
 
-  if (body.title === '') {
-    return response.status(400).json({ message: 'title cannot be empty' });
-  }
+    if (body[campo] === '') {
+      return response.status(400).json({ message: `${nomeCampo} está em branco` });
+    }
 
-  next();
+    next();
+  };
 };
-/*
-const validateFieldStatus = (request, response, next) => {
-  const { body } = request;
 
-  if (body.status === undefined) {
-    return response.status(400).json({ message: 'The field "status" is required' });
-  }
+// Validador para múltiplos campos obrigatórios
+const validarCamposObrigatorios = (campos) => {
+  return (request, response, next) => {
+    const { body } = request;
 
-  if (body.status === '') {
-    return response.status(400).json({ message: 'status cannot be empty' });
-  }
+    for (const { nome, exibicao } of campos) {
+      if (body[nome] === undefined) {
+        return response.status(400).json({ message: `${exibicao || nome} não foi enviado` });
+      }
 
-  next();
+      if (body[nome] === '') {
+        return response.status(400).json({ message: `${exibicao || nome} está em branco` });
+      }
+    }
+
+    next();
+  };
 };
-*/
+
+// Validadores específicos legados (mantidos para compatibilidade)
+const validarnome = validarCampoObrigatorio('nome_aluno', 'nome do aluno');
+
+const telefone = validarCampoObrigatorio('telefone', 'telefone');
+
+// Validadores por entidade
+const validacoes = {
+  aluno: validarCamposObrigatorios([
+    { nome: 'nome_aluno', exibicao: 'Nome do aluno' },
+    { nome: 'matricula_aluno', exibicao: 'Matrícula do aluno' }
+  ]),
+
+  professor: validarCamposObrigatorios([
+    { nome: 'nome_professor', exibicao: 'Nome do professor' },
+    { nome: 'matricula_professor', exibicao: 'Matrícula do professor' }
+  ]),
+
+  curso: validarCamposObrigatorios([
+    { nome: 'nome_curso', exibicao: 'Nome do curso' },
+    { nome: 'coordenador', exibicao: 'Coordenador' }
+  ]),
+
+  usuario: validarCamposObrigatorios([
+    { nome: 'nome_usuario', exibicao: 'Nome do usuário' },
+    { nome: 'email', exibicao: 'Email' },
+    { nome: 'password', exibicao: 'Senha' }
+  ]),
+
+  turma: validarCamposObrigatorios([
+    { nome: 'cod_turma', exibicao: 'Código da turma' },
+    { nome: 'turno', exibicao: 'Turno' }
+  ]),
+
+  area: validarCamposObrigatorios([
+    { nome: 'nome_area', exibicao: 'Nome da área' },
+    { nome: 'codigo_area', exibicao: 'Código da área' }
+  ]),
+
+  projeto: validarCamposObrigatorios([
+    { nome: 'nome_projeto', exibicao: 'Nome do projeto' },
+    { nome: 'orientador', exibicao: 'Orientador' }
+  ]),
+
+  meuprojeto: validarCamposObrigatorios([
+    { nome: 'nome_projeto', exibicao: 'Nome do projeto' },
+    { nome: 'usuarios', exibicao: 'Usuário' }
+  ])
+};
 
 module.exports = {
-  validateFieldTitle,
+  validarnome,
+  telefone,
+  validarCampoObrigatorio,
+  validarCamposObrigatorios,
+  validacoes
 };

@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin — Teste API</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f0f2f5; color: #333; }
+    header { background: #2c3e50; color: #fff; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    header h1 { margin: 0; font-size: 28px; }
+    header p { margin: 8px 0 0; opacity: 0.9; }
+    
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    .box { background: #fff; border: 1px solid #e1e1e8; padding: 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid #e1e1e8; overflow-x: auto; }
+    .tab { padding: 12px 16px; cursor: pointer; border: none; background: none; font-size: 14px; color: #666; border-bottom: 3px solid transparent; transition: all 0.3s; }
+    .tab:hover { color: #2c3e50; }
+    .tab.active { color: #2c3e50; border-bottom-color: #3498db; }
+    
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    label { display: block; margin: 12px 0 6px; font-weight: 600; color: #2c3e50; }
+    textarea, input, select { width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 13px; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 3px rgba(52,152,219,0.1); }
+    
+    button { padding: 10px 16px; margin-right: 8px; margin-top: 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; }
+    .btn-primary { background: #3498db; color: #fff; }
+    .btn-primary:hover { background: #2980b9; }
+    .btn-secondary { background: #95a5a6; color: #fff; }
+    .btn-secondary:hover { background: #7f8c8d; }
+    .btn-info { background: #1abc9c; color: #fff; font-size: 12px; padding: 6px 10px; }
+    .btn-info:hover { background: #16a085; }
+    
+    .row { display: flex; gap: 12px; }
+    .row > * { flex: 1; }
+    
+    .output-box { background: #1e1e1e; color: #e0e0e0; padding: 16px; border-radius: 6px; border: 1px solid #333; overflow-x: auto; max-height: 400px; font-family: 'Courier New', monospace; font-size: 13px; white-space: pre-wrap; word-wrap: break-word; }
+    
+    .response-meta { display: flex; gap: 16px; margin-bottom: 12px; font-size: 12px; }
+    .response-meta span { padding: 4px 8px; background: #ecf0f1; border-radius: 3px; }
+    .response-meta .success { background: #d5f4e6; color: #27ae60; }
+    .response-meta .error { background: #fadbd8; color: #c0392b; }
+    
+    .preset-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    
+    .info-panel { background: #ecf7ff; border-left: 4px solid #3498db; padding: 12px; border-radius: 4px; margin-bottom: 12px; font-size: 13px; }
+    
+    .history-item { background: #f8f9fa; padding: 12px; border-radius: 4px; margin-bottom: 8px; font-size: 12px; border-left: 4px solid #3498db; cursor: pointer; transition: all 0.3s; }
+    .history-item:hover { background: #ecf0f1; }
+    .history-item.success { border-left-color: #27ae60; }
+    .history-item.error { border-left-color: #c0392b; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔧 Admin — Teste da API</h1>
+    <p>Painel para testar todos os endpoints da API (GET/POST/PUT/DELETE) de forma interativa.</p>
+  </header>
+
+  <div class="container">
+    <div class="box">
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-tab="alunos">👥 Alunos</button>
+        <button class="tab" data-tab="professores">👨‍🏫 Professores</button>
+        <button class="tab" data-tab="cursos">📚 Cursos</button>
+        <button class="tab" data-tab="turmas">🏫 Turmas</button>
+        <button class="tab" data-tab="areas">📍 Áreas</button>
+        <button class="tab" data-tab="usuarios">👤 Usuários</button>
+        <button class="tab" data-tab="projetos">🎯 Projetos</button>
+        <button class="tab" data-tab="custos">💰 Custos</button>
+        <button class="tab" data-tab="outros">📋 Outros</button>
+      </div>
+
+      <!-- Abas de Conteúdo -->
+      <div id="alunos-tab" class="tab-content active">
+        <h3>Alunos</h3>
+        <div class="info-panel">💡 Campos obrigatórios: nome_aluno, matricula_aluno</div>
+        <label>Método</label>
+        <select id="method-alunos" onchange="updateUrl('alunos')">
+          <option value="GET">GET - Listar todos</option>
+          <option value="POST">POST - Criar novo</option>
+          <option value="PUT">PUT - Atualizar</option>
+          <option value="DELETE">DELETE - Deletar</option>
+        </select>
+
+        <label>ID (para PUT/DELETE)</label>
+        <input id="id-alunos" placeholder="ex: 1" />
+
+        <div class="row" id="pagination-alunos" style="display: none;">
+          <div>
+            <label>Página</label>
+            <input type="number" id="page-alunos" value="1" min="1" placeholder="Página" />
+          </div>
+          <div>
+            <label>Itens por página</label>
+            <input type="number" id="limit-alunos" value="10" min="1" max="100" placeholder="Limite" />
+          </div>
+        </div>
+
+        <label>Payload JSON</label>
+        <textarea id="body-alunos" rows="6" placeholder='{"nome_aluno":"João Silva","matricula_aluno":20230001,"id_curso":1,"usuario_id":1,"telefone":"9999999999"}'></textarea>
+
+        <div class="preset-buttons">
+          <button class="btn-info" onclick="setBodyTemplate('alunos', 'insert')">📋 Inserir</button>
+          <button class="btn-info" onclick="setBodyTemplate('alunos', 'update')">✏️ Atualizar</button>
+        </div>
+
+        <button class="btn-primary" onclick="sendRequest('alunos')">Enviar</button>
+        <button class="btn-secondary" onclick="clearOutput()">Limpar</button>
+      </div>
+
+      <!-- Professores -->
+      <div id="professores-tab" class="tab-content">
+        <h3>Professores</h3>
+        <div class="info-panel">💡 Campos obrigatórios: nome_professor, matricula_professor</div>
+        <label>Método</label>
+        <select id="method-professores" onchange="updateUrl('professores')">
+          <option value="GET">GET - Listar todos</option>
+          <option value="POST">POST - Criar novo</option>
+          <option value="PUT">PUT - Atualizar</option>
+          <option value="DELETE">DELETE - Deletar</option>
+        </select>
+
+        <label>ID (para PUT/DELETE)</label>
+        <input id="id-professores" placeholder="ex: 1" />
+
+        <div class="row" id="pagination-professores" style="display: none;">
+          <div>
+            <label>Página</label>
+            <input type="number" id="page-professores" value="1" min="1" placeholder="Página" />
+          </div>
+          <div>
+            <label>Itens por página</label>
+            <input type="number" id="limit-professores" value="10" min="1" max="100" placeholder="Limite" />
+          </div>
+        </div>
+
+        <label>Payload JSON</label>
+        <textarea id="body-professores" rows="6" placeholder='{"nome_professor":"Dr. Silva","matricula_professor":20210001,"id_area":1,"usuario_id":1,"telefone":"9999999999"}'></textarea>
+
+        <div class="preset-buttons">
+          <button class="btn-info" onclick="setBodyTemplate('professores', 'insert')">📋 Inserir</button>
+          <button class="btn-info" onclick="setBodyTemplate('professores', 'update')">✏️ Atualizar</button>
+        </div>
+
+        <button class="btn-primary" onclick="sendRequest('professores')">Enviar</button>
+        <button class="btn-secondary" onclick="clearOutput()">Limpar</button>
+      </div>
+
+      <!-- Cursos -->
+      <div id="cursos-tab" class="tab-content">
+        <h3>Cursos</h3>
+        <div class="info-panel">💡 Campos obrigatórios: nome_curso, coordenador</div>
+        <label>Método</label>
+        <select id="method-cursos" onchange="updateUrl('cursos')">
+          <option value="GET">GET - Listar todos</option>
+          <option value="POST">POST - Criar novo</option>
+          <option value="PUT">PUT - Atualizar</option>
+          <option value="DELETE">DELETE - Deletar</option>
+        </select>
+
+        <label>ID (para PUT/DELETE)</label>
+        <input id="id-cursos" placeholder="ex: 1" />
+
+        <div class="row" id="pagination-cursos" style="display: none;">
+          <div>
+            <label>Página</label>
+            <input type="number" id="page-cursos" value="1" min="1" placeholder="Página" />
+          </div>
+          <div>
+            <label>Itens por página</label>
+            <input type="number" id="limit-cursos" value="10" min="1" max="100" placeholder="Limite" />
+          </div>
+        </div>
+
+        <label>Payload JSON</label>
+        <textarea id="body-cursos" rows="6" placeholder='{"nome_curso":"Engenharia de Computação","coordenador":"Dr. Silva","duracao":8,"descricao_curso":"Curso superior em Engenharia"}'></textarea>
+
+        <div class="preset-buttons">
+          <button class="btn-info" onclick="setBodyTemplate('cursos', 'insert')">📋 Inserir</button>
+          <button class="btn-info" onclick="setBodyTemplate('cursos', 'update')">✏️ Atualizar</button>
+        </div>
+
+        <button class="btn-primary" onclick="sendRequest('cursos')">Enviar</button>
+        <button class="btn-secondary" onclick="clearOutput()">Limpar</button>
+      </div>
+
+      <!-- Turmas -->
+      <div id="turmas-tab" class="tab-content">
+        <h3>Turmas</h3>
+        <div class="info-panel">💡 Campos obrigatórios: cod_turma, turno</div>
+        <label>Método</label>
+        <select id="method-turmas" onchange="updateUrl('turmas')">
+          <option value="GET">GET - Listar todos</option>
+          <option value="POST">POST - Criar novo</option>
+          <option value="PUT">PUT - Atualizar</option>
+          <option value="DELETE">DELETE - Deletar</option>
+        </select>
+
+        <label>ID (para PUT/DELETE)</label>
+        <input id="id-turmas" placeholder="ex: 1" />
+
+        <div class="row" id="pagination-turmas" style="display: none;">
+          <div>
+            <label>Página</label>
+            <input type="number" id="page-turmas" value="1" min="1" placeholder="Página" />
+          </div>
+          <div>
+            <label>Itens por página</label>
+            <input type="number" id="limit-turmas" value="10" min="1" max="100" placeholder="Limite" />
+          </div>
+        </div>
+
+        <label>Payload JSON</label>
+        <textarea id="body-turmas" rows="6" placeholder='{"cod_turma":"ENG-2023-01","turno":"Matutino","quantidade_alunos":30,"id_curso":1}'></textarea>
+
+        <div class="preset-buttons">
+          <button class="btn-info" onclick="setBodyTemplate('turmas', 'insert')">📋 Inserir</button>
+          <button class="btn-info" onclick="setBodyTemplate('turmas', 'update')">✏️ Atualizar</button>
+        </div>
+
+        <button class="btn-primary" onclick="sendRequest('turmas')">Enviar</button>
+        <button class="btn-secondary" onclick="clearOutput()">Limpar</button>
+      </div>
+
+      <!-- Áreas Acadêmicas -->
+      <div id="areas-tab" class="tab-content">
+        <h3>Áreas Acadêmicas</h3>
+        <div class="info-panel">💡 Campos obrigatórios: nome_area, codigo_area</div>
+        <label>Método</label>
+        <select id="method-areas" onchange="updateUrl('areas')">
+          <option value="GET">GET - Listar todos</option>
+          <option value="POST">POST - Criar novo</option>
+          <option value="PUT">PUT - Atualizar</option>
+          <option value="DELETE">DELETE - Deletar</option>
+        </select>
+
+        <label>ID (para PUT/DELETE)</label>
+        <input id="id-areas" placeholder="ex: 1" />
+
+        <div class="row" id="pagination-areas" style="display: none;">
+          <div>
+            <label>Página</label>
+            <input type="number" id="page-areas" value="1" min="1" placeholder="Página" />
+          </div>
+          <div>
+            <label>Itens por página</label>
+            <input type="number" id="limit-areas" value="10" min="1" max="100" placeholder="Limite" />
+          </div>
+        </div>
+
+        <label>Payload JSON</label>
+        <textarea id="body-areas" rows="6" placeholder='{"nome_area":"Tecnologia da Informação","codigo_area":100,"descricao_area":"Área de TI e Computação"}'></textarea>
+
+        <div class="preset-buttons">
+          <button class="btn-info" onclick="setBodyTemplate('areas', 'insert')">📋 Inserir</button>
+          <button class="btn-info" onclick="setBodyTemplate('areas', 'update')">✏️ Atualizar</button>
+        </div>
+
+        <button class="btn-primary" onclick="sendRequest('areas')">Enviar</button>
+        <button class="btn-secondary" onclick="clearOutput()">Limpar</button>
+      </div>
+
+      <!-- Usuários -->
+      <div id="usuarios-tab" class="tab-content">
+        <h3>Usuários</h3>
+        <div class="info-panel">💡 Campos obrigatórios: nome_usuario, email, password</div>
+        <label>Método</label>
+        <select id="method-usuarios" onchange="updateUrl('usuarios')">
+          <option value="GET">GET - Listar todos</option>
+          <option value="POST">POST - Criar novo</option>
+          <option value="PUT">PUT - Atualizar</option>
+          <option value="DELETE">DELETE - Deletar</option>
+        </select>
+
+        <label>ID (para PUT/DELETE)</label>
+        <input id="id-usuarios" placeholder="ex: 1" />
+
+        <div class="row" id="pagination-usuarios" style="display: none;">
+          <div>
+            <label>Página</label>
+            <input type="number" id="page-usuarios" value="1" min="1" placeholder="Página" />
+          </div>
+          <div>
+            <label>Itens por página</label>
+            <input type="number" id="limit-usuarios" value="10" min="1" max="100" placeholder="Limite" />
+          </div>
+        </div>
+
+        <label>Payload JSON</label>
+        <textarea id="body-usuarios" rows="6" placeholder='{"nome_usuario":"João Silva","email":"joao@example.com","password":"senha123","ativo":true}'></textarea>
+
+        <div class="preset-buttons">
+          <button class="btn-info" onclick="setBodyTemplate('usuarios', 'insert')">📋 Inserir</button>
+          <button class="btn-info" onclick="setBodyTemplate('usuarios', 'update')">✏️ Atualizar</button>
+        </div>
+
+        <button class="btn-primary" onclick="sendRequest('usuarios')">Enviar</button>
+        <button class="btn-secondary" onclick="clearOutput()">Limpar</button>
+      </div>
+
+      <!-- Projetos -->
+      <div id="projetos-tab" class="tab-content">
+        <h3>Projetos</h3>
+        <div class="info-panel">💡 Campos obrigatórios: nome_projeto, orientador</div>
+        <label>Método</label>
+        <select id="method-projetos" onchange="updateUrl('projetos')">
+          <option value="GET">GET - Listar todos</option>
+          <option value="POST">POST - Criar novo</option>
+          <option value="PUT">PUT - Atualizar</option>
+          <option value="DELETE">DELETE - Deletar</option>
+        </select>
+
+        <label>ID (para PUT/DELETE)</label>
+        <input id="id-projetos" placeholder="ex: 1" />
+
+        <div class="row" id="pagination-projetos" style="display: none;">
+          <div>
+            <label>Página</label>
+            <input type="number" id="page-projetos" value="1" min="1" placeholder="Página" />
+          </div>
+          <div>
+            <label>Itens por página</label>
+            <input type="number" id="limit-projetos" value="10" min="1" max="100" placeholder="Limite" />
+          </div>
+        </div>
+
+        <label>Payload JSON</label>
+        <textarea id="body-projetos" rows="6" placeholder='{"nome_projeto":"Sistema Web","orientador":1,"coorientador":"Dr. Silva","matricula_alunos":"2023001,2023002"}'></textarea>
+
+        <div class="preset-buttons">
+          <button class="btn-info" onclick="setBodyTemplate('projetos', 'insert')">📋 Inserir</button>
+          <button class="btn-info" onclick="setBodyTemplate('projetos', 'update')">✏️ Atualizar</button>
+        </div>
+
+        <button class="btn-primary" onclick="sendRequest('projetos')">Enviar</button>
+        <button class="btn-secondary" onclick="clearOutput()">Limpar</button>
+      </div>
+
+      <!-- Custos -->
+      <div id="custos-tab" class="tab-content">
+        <h3>Custos</h3>
+        <label>Método</label>
+        <select id="method-custos" onchange="updateUrl('custos')">
+          <option value="GET">GET - Listar todos</option>
+          <option value="POST">POST - Criar novo</option>
+          <option value="PUT">PUT - Atualizar</option>
+          <option value="DELETE">DELETE - Deletar</option>
+        </select>
+
+        <label>ID (para PUT/DELETE)</label>
+        <input id="id-custos" placeholder="ex: 1" />
+
+        <div class="row" id="pagination-custos" style="display: none;">
+          <div>
+            <label>Página</label>
+            <input type="number" id="page-custos" value="1" min="1" placeholder="Página" />
+          </div>
+          <div>
+            <label>Itens por página</label>
+            <input type="number" id="limit-custos" value="10" min="1" max="100" placeholder="Limite" />
+          </div>
+        </div>
+
+        <label>Payload JSON</label>
+        <textarea id="body-custos" rows="6" placeholder='{"id_projeto":1,"equipamento":"Computador","custos_equipamento":3000.00,"insumos":"Papel e Tinta","custos_insumos":150.00}'></textarea>
+
+        <div class="preset-buttons">
+          <button class="btn-info" onclick="setBodyTemplate('custos', 'insert')">📋 Inserir</button>
+          <button class="btn-info" onclick="setBodyTemplate('custos', 'update')">✏️ Atualizar</button>
+        </div>
+
+        <button class="btn-primary" onclick="sendRequest('custos')">Enviar</button>
+        <button class="btn-secondary" onclick="clearOutput()">Limpar</button>
+      </div>
+
+      <!-- Outros (Arquivos, Registros, Meus Projetos) -->
+      <div id="outros-tab" class="tab-content">
+        <h3>Outros Recursos</h3>
+        <label>Selecione o recurso</label>
+        <select id="resource-outros" onchange="updateOutrosResource()">
+          <option value="arquivos">📁 Arquivos (com upload)</option>
+          <option value="registros">📝 Registros</option>
+          <option value="meusprojetos">🎓 Meus Projetos</option>
+        </select>
+
+        <label>Método</label>
+        <select id="method-outros" onchange="updateUrl('outros')">
+          <option value="GET">GET - Listar todos</option>
+          <option value="POST">POST - Criar novo</option>
+          <option value="PUT">PUT - Atualizar</option>
+          <option value="DELETE">DELETE - Deletar</option>
+        </select>
+
+        <label>ID (para PUT/DELETE)</label>
+        <input id="id-outros" placeholder="ex: 1" />
+
+        <div class="row" id="pagination-outros" style="display: none;">
+          <div>
+            <label>Página</label>
+            <input type="number" id="page-outros" value="1" min="1" placeholder="Página" />
+          </div>
+          <div>
+            <label>Itens por página</label>
+            <input type="number" id="limit-outros" value="10" min="1" max="100" placeholder="Limite" />
+          </div>
+        </div>
+
+        <!-- Upload de arquivo (apenas para Arquivos POST) -->
+        <div id="arquivo-upload-section" style="display: none;">
+          <label>📤 Arquivo para upload</label>
+          <input type="file" id="arquivo-file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif,.webp" placeholder="Selecione um arquivo" />
+          <p style="font-size: 12px; color: #666; margin-top: 6px;">Tipos permitidos: PDF, DOC, DOCX, XLS, XLSX, TXT, JPG, PNG, GIF, WEBP (máx 50 MB)</p>
+        </div>
+
+        <label>Payload JSON</label>
+        <textarea id="body-outros" rows="6" placeholder='{"id_meuprojeto":1,"resumo":"Resumo do arquivo","justificativa":"Justificativa"}'></textarea>
+
+        <button class="btn-primary" onclick="sendRequest('outros')">Enviar</button>
+        <button class="btn-secondary" onclick="clearOutput()">Limpar</button>
+      </div>
+    </div>
+
+    <!-- Resposta -->
+    <div class="box">
+      <h3>📊 Resposta</h3>
+      <div class="response-meta">
+        <span>Status: <strong id="response-status">-</strong></span>
+        <span id="response-time">Tempo: -</span>
+      </div>
+      <div class="output-box" id="output">Nenhuma requisição feita ainda. Selecione um recurso, método e configure os dados para enviar.</div>
+    </div>
+
+    <!-- Histórico -->
+    <div class="box">
+      <h3>📜 Histórico de Requisições</h3>
+      <div id="history" style="max-height: 300px; overflow-y: auto;">
+        <p style="color: #999; font-size: 12px;">Nenhuma requisição ainda.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const base = window.location.origin;
+    const apiPrefix = ''; // Use '' para rotas sem /api ou '/api' para com prefixo
+    
+    const resourceMap = {
+      alunos: {list: '/selectaluno', post: '/inseriraluno', put: '/atualizaraluno', delete: '/deletealuno'},
+      professores: {list: '/selectprofessor', post: '/inserirprofessor', put: '/atualizarprofessor', delete: '/deleteprofessor'},
+      areas: {list: '/selectareas', post: '/inserirarea', put: '/atualizararea', delete: '/deletearea'},
+      arquivos: {list: '/selectarquivos', post: '/inserirarquivo', put: '/atualizararquivo', delete: '/deletarquivos'},
+      cursos: {list: '/selectcursos', post: '/inserircursos', put: '/atualizarcurso', delete: '/deletecurso'},
+      custos: {list: '/selectcustos', post: '/inserircusto', put: '/atualizarcusto', delete: '/deletecusto'},
+      meusprojetos: {list: '/selectmeusprojetos', post: '/inserirmeuprojeto', put: '/atualizarmeusprojeto', delete: '/deletemeusprojeto'},
+      projetos: {list: '/selectprojetos', post: '/inserirprojeto', put: '/atualizarprojeto', delete: '/deleteprojeto'},
+      registros: {list: '/selectregistros', post: '/inserirregistro', put: '/atualizarregistro', delete: '/deleteregistro'},
+      turmas: {list: '/selectturmas', post: '/inserirturma', put: '/atualizarturma', delete: '/deleteturma'},
+      usuarios: {list: '/selectusuarios', post: '/inserirusuario', put: '/atualizarusuario', delete: '/deleteusuario'}
+    };
+
+    const templates = {
+      alunos: {
+        insert: '{"nome_aluno":"Novo Aluno","matricula_aluno":20230001,"id_curso":1,"usuario_id":null,"telefone":""}',
+        update: '{"nome_aluno":"Aluno Atualizado","matricula_aluno":20230001,"id_curso":1,"telefone":"9999999999"}'
+      },
+      professores: {
+        insert: '{"nome_professor":"Novo Professor","matricula_professor":20210001,"id_area":1,"usuario_id":null,"telefone":""}',
+        update: '{"nome_professor":"Professor Atualizado","matricula_professor":20210001,"id_area":1,"telefone":"9999999999"}'
+      },
+      cursos: {
+        insert: '{"nome_curso":"Novo Curso","coordenador":"Coordenador","duracao":8,"descricao_curso":"Descrição"}',
+        update: '{"nome_curso":"Curso Atualizado","coordenador":"Coordenador","duracao":8,"descricao_curso":"Descrição"}'
+      },
+      turmas: {
+        insert: '{"cod_turma":"TUR-2024-01","turno":"Matutino","quantidade_alunos":30,"id_curso":1}',
+        update: '{"cod_turma":"TUR-2024-01","turno":"Noturno","quantidade_alunos":35,"id_curso":1}'
+      },
+      areas: {
+        insert: '{"nome_area":"Nova Área","codigo_area":999,"descricao_area":"Descrição da área"}',
+        update: '{"nome_area":"Área Atualizada","codigo_area":999,"descricao_area":"Descrição atualizada"}'
+      },
+      usuarios: {
+        insert: '{"nome_usuario":"novo.usuario","email":"novo@example.com","password":"senha123","ativo":true}',
+        update: '{"nome_usuario":"usuario.atualizado","email":"atualizado@example.com","password":"novaSenha123","ativo":true}'
+      },
+      projetos: {
+        insert: '{"nome_projeto":"Novo Projeto","orientador":1,"coorientador":"Dr. Silva","matricula_alunos":"2023001"}',
+        update: '{"nome_projeto":"Projeto Atualizado","orientador":1,"coorientador":"Dr. Silva","matricula_alunos":"2023001,2023002"}'
+      },
+      custos: {
+        insert: '{"id_projeto":1,"equipamento":"Equipamento","custos_equipamento":1000.00,"insumos":"Insumos","custos_insumos":500.00}',
+        update: '{"id_projeto":1,"equipamento":"Equipamento Updated","custos_equipamento":1500.00,"insumos":"Insumos","custos_insumos":600.00}'
+      }
+    };
+
+    let requestHistory = [];
+    const $ = id => document.getElementById(id);
+    const out = $('output');
+
+    function show(v) { out.textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
+    function clearOutput() { out.textContent = 'Resposta limpa.'; $('response-status').textContent = '-'; $('response-time').textContent = 'Tempo: -'; }
+
+    // Abas
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+        tab.classList.add('active');
+        $(`${tab.dataset.tab}-tab`).classList.add('active');
+      });
+    });
+
+    function updateOutrosResource() {
+      const resource = $('resource-outros').value;
+      const uploadSection = $('arquivo-upload-section');
+      
+      // Mostrar upload apenas para Arquivos POST
+      if(resource === 'arquivos' && $('method-outros').value === 'POST') {
+        uploadSection.style.display = 'block';
+      } else {
+        uploadSection.style.display = 'none';
+      }
+    }
+
+    function updateUrl(tabName) {
+      const method = $(`method-${tabName}`).value;
+      const paginationDiv = $(`pagination-${tabName}`);
+      if(method === 'GET') {
+        paginationDiv.style.display = 'flex';
+      } else {
+        paginationDiv.style.display = 'none';
+      }
+      
+      // Para aba "outros", atualizar visibilidade do upload
+      if(tabName === 'outros') {
+        updateOutrosResource();
+      }
+    }
+
+    function setBodyTemplate(resource, type) {
+      if(templates[resource] && templates[resource][type]) {
+        $(`body-${resource}`).value = templates[resource][type];
+      }
+    }
+
+    async function sendRequest(tabName) {
+      let resource, method, id, body;
+      
+      if(tabName === 'outros') {
+        resource = $('resource-outros').value;
+        method = $('method-outros').value;
+        id = $('id-outros').value.trim();
+        body = $('body-outros').value.trim();
+      } else {
+        resource = tabName;
+        method = $(`method-${tabName}`).value;
+        id = $(`id-${tabName}`).value.trim();
+        body = $(`body-${tabName}`).value.trim();
+      }
+
+      const map = resourceMap[resource];
+      if(!map) { show('Recurso desconhecido'); return; }
+
+      if((method === 'PUT' || method === 'DELETE') && !id) { show('⚠️ Informe o ID para PUT/DELETE'); return; }
+
+      let url = base + apiPrefix + (method === 'GET' ? map.list : (method === 'POST' ? map.post : (method === 'PUT' ? `${map.put}/${id}` : `${map.delete}/${id}`)));
+      
+      // Adicionar paginação à URL GET
+      if(method === 'GET') {
+        const page = $(`page-${tabName === 'outros' ? 'outros' : tabName}`).value || 1;
+        const limit = $(`limit-${tabName === 'outros' ? 'outros' : tabName}`).value || 10;
+        url += `?page=${page}&limit=${limit}`;
+      }
+      
+      console.log('Enviando requisição:', { method, url, body });
+      
+      const opts = { method, headers: {} };
+      
+      // Para upload de arquivo (Arquivos POST)
+      if(resource === 'arquivos' && method === 'POST' && $('arquivo-file').files.length > 0) {
+        const formData = new FormData();
+        const file = $('arquivo-file').files[0];
+        formData.append('arquivo', file);
+        
+        // Adicionar campos JSON adicionais se preenchidos
+        let jsonData = {};
+        try {
+          if(body) jsonData = JSON.parse(body);
+        } catch(e) {
+          show('⚠️ JSON inválido no Payload');
+          return;
+        }
+        
+        Object.keys(jsonData).forEach(key => {
+          formData.append(key, jsonData[key]);
+        });
+        
+        opts.body = formData;
+        // Remover Content-Type para FormData (browser define automaticamente)
+      } else if(method === 'POST' || method === 'PUT') {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = body || '{}';
+      }
+
+      show('⏳ Enviando para: ' + url);
+      const startTime = Date.now();
+      
+      try {
+        const resp = await fetch(url, opts);
+        const endTime = Date.now();
+        const contentType = resp.headers.get('content-type') || '';
+        let data;
+        
+        if(contentType.includes('application/json')) {
+          data = await resp.json();
+        } else {
+          data = await resp.text();
+        }
+        
+        const result = { status: resp.status, ok: resp.ok, statusText: resp.statusText, data };
+        show(result);
+        $('response-status').textContent = `${resp.status} ${resp.statusText} ${resp.ok ? '✅' : '❌'}`;
+        $('response-time').textContent = `Tempo: ${endTime - startTime}ms`;
+        
+        // Adicionar ao histórico
+        requestHistory.unshift({ method, resource, id, status: resp.status, ok: resp.ok, time: new Date().toLocaleTimeString() });
+        updateHistory();
+      } catch(err) {
+        console.error('Erro na requisição:', err);
+        show('❌ Erro na requisição:\n' + err.message + '\n\nURL tentada: ' + url);
+        $('response-status').textContent = 'Erro: ' + err.message;
+      }
+    }
+
+    function updateHistory() {
+      const historyDiv = $('history');
+      if(requestHistory.length === 0) {
+        historyDiv.innerHTML = '<p style="color: #999; font-size: 12px;">Nenhuma requisição ainda.</p>';
+        return;
+      }
+      historyDiv.innerHTML = requestHistory.slice(0, 10).map((req, i) => 
+        `<div class="history-item ${req.ok ? 'success' : 'error'}" onclick="alert('${req.method} ${req.resource}${req.id ? ' #' + req.id : ''} — Status: ${req.status}')">
+          <strong>${req.method}</strong> /${req.resource}${req.id ? '#' + req.id : ''} — ${req.status} ${req.ok ? '✅' : '❌'} às ${req.time}
+        </div>`
+      ).join('');
+    }
+
+    updateHistory();
+  </script>
+</body>
+</html>
