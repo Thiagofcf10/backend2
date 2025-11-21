@@ -1,11 +1,19 @@
 const connection = require('../DBmysql/conectaraoDB'); // Importa a conexão MySQL
 
-const getCustos = async () => {
+const getCustos = async (projetoId = null) => {
+  if (projetoId) {
+    const [rows] = await connection.execute('SELECT * FROM custos WHERE id_projeto = ?', [projetoId]);
+    return rows;
+  }
   const [rows] = await connection.execute('SELECT * FROM custos');
   return rows;
 };
 
-const getCustosTotal = async () => {
+const getCustosTotal = async (projetoId = null) => {
+  if (projetoId) {
+    const [rows] = await connection.execute('SELECT COUNT(*) as total FROM custos WHERE id_projeto = ?', [projetoId]);
+    return rows[0].total;
+  }
   const [rows] = await connection.execute('SELECT COUNT(*) as total FROM custos');
   return rows[0].total;
 };

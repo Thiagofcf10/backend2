@@ -10,6 +10,37 @@ const validacao = require('./validar/validacao');
 const { authenticateToken } = require('./autenticacao/auth');
 const apiKeyAuth = require('./middlewares/apiKey');
 const upload = require('./middlewares/upload');
+const connection = require('./DBmysql/conectaraoDB');
+
+// Middleware: ensure orientador is present in body by mapping authenticated user -> professor.id
+// If the client provided an explicit orientador (professor id), keep it. Otherwise attempt
+// to find the professor record that matches the authenticated `usuarios.id` (usuario_id)
+// and set `req.body.orientador` to that `professores.id` so FK constraint is satisfied.
+const ensureOrientadorFromUser = async (req, res, next) => {
+	try {
+		if (!req.body) req.body = {};
+		// If orientador already provided by client, do nothing.
+		if (req.body.orientador) return next();
+
+		if (req.user && req.user.id) {
+			try {
+				const [rows] = await connection.execute('SELECT id FROM professores WHERE usuario_id = ? LIMIT 1', [req.user.id]);
+				if (rows && rows.length > 0) {
+					req.body.orientador = rows[0].id;
+				} else {
+					// No professor record linked to this usuario; leave orientador undefined so validation
+					// can return a clear error (or clients can select an explicit orientador).
+				}
+			} catch (dbErr) {
+				// If DB query fails, log and continue to next so route validation handles missing orientador.
+				console.error('Erro ao buscar professor para usuario:', dbErr.message || dbErr);
+			}
+		}
+	} catch (err) {
+		// ignore and continue; this middleware is a convenience
+	}
+	next();
+};
 
 // ============================================================
 // ROTAS PÚBLICAS (SEM AUTENTICAÇÃO)
@@ -23,13 +54,23 @@ router.post('/logout', CT_auth.logoutController);
 
 // GET (Leitura) - acessível via API key (URL + api_key or header x-api-key)
 router.get('/selectaluno', apiKeyAuth, CT_select.getAlunos);
+router.get('/selectaluno/:id', apiKeyAuth, CT_select.getAlunoById);
 router.get('/selectprofessor', apiKeyAuth, CT_select.getProfessores);
+router.get('/selectprofessor/:id', apiKeyAuth, CT_select.getProfessorById);
 router.get('/selectareas', apiKeyAuth, CT_select.getAreasAcademicas);
 router.get('/selectarquivos', apiKeyAuth, CT_select.getArquivos);
+// single arquivo by id
+router.get('/selectarquivos/:id', apiKeyAuth, CT_select.getArquivoById);
 router.get('/selectcursos', apiKeyAuth, CT_select.getCursos);
 router.get('/selectcustos', apiKeyAuth, CT_select.getCustos);
 router.get('/selectmeusprojetos', apiKeyAuth, CT_select.getMeusProjetos);
+// Role-aware meus projetos: pass ?tipo=professor|aluno
+router.get('/selectmeusprojetos/:usuario_id', apiKeyAuth, CT_select.getMeusProjetosByUsuario);
 router.get('/selectprojetos', apiKeyAuth, CT_select.getProjetos);
+// Public listing of published projects
+router.get('/selectprojetos_publicos', apiKeyAuth, CT_select.getProjetosPublicos);
+// single projeto by id
+router.get('/selectprojetos/:id', apiKeyAuth, CT_select.getProjetoById);
 router.get('/selectregistros', apiKeyAuth, CT_select.getRegistros);
 router.get('/selectturmas', apiKeyAuth, CT_select.getTurmas);
 router.get('/selectusuarios', apiKeyAuth, CT_select.getUsuarios);
@@ -56,7 +97,8 @@ router.put('/atualizararea/:id', authenticateToken, validacao.validacoes.area, C
 // Arquivos
 router.post('/inserirarquivo', authenticateToken, upload.single('arquivo'), CT_insert.inserirArquivo);
 router.delete('/deletarquivos/:id', authenticateToken, CT_delete.deleteArquivo);
-router.put('/atualizararquivo/:id', authenticateToken, CT_update.atualizarArquivo);
+// Allow file replacement via multipart/form-data on atualizararquivo
+router.put('/atualizararquivo/:id', authenticateToken, upload.single('arquivo'), CT_update.atualizarArquivo);
 
 // Cursos
 router.post('/inserircursos', authenticateToken, validacao.validacoes.curso, CT_insert.inserirCurso);
@@ -74,9 +116,15 @@ router.delete('/deletemeusprojeto/:id', authenticateToken, CT_delete.deleteMeuPr
 router.put('/atualizarmeusprojeto/:id', authenticateToken, validacao.validacoes.meuprojeto, CT_update.atualizarMeuProjeto);
 
 // Projetos
-router.post('/inserirprojeto', authenticateToken, validacao.validacoes.projeto, CT_insert.inserirProjeto);
+// When creating a project, orientador is set server-side from the authenticated user
+// When creating a project, orientador is set server-side from the authenticated user
+// ensureOrientadorFromUser runs after authenticateToken and before validation to avoid
+// validation errors if an older validator still expects orientador in the body.
+router.post('/inserirprojeto', authenticateToken, ensureOrientadorFromUser, validacao.validacoes.projeto_create, CT_insert.inserirProjeto);
 router.delete('/deleteprojeto/:id', authenticateToken, CT_delete.deleteProjeto);
 router.put('/atualizarprojeto/:id', authenticateToken, validacao.validacoes.projeto, CT_update.atualizarProjeto);
+// Publish/unpublish a project (authenticated)
+router.put('/publicarprojeto/:id', authenticateToken, CT_update.publicarProjeto);
 
 // Registros
 router.post('/inserirregistro', authenticateToken, CT_insert.inserirRegistro);
@@ -91,7 +139,8 @@ router.put('/atualizarturma/:id', authenticateToken, validacao.validacoes.turma,
 // Usuarios
 router.post('/inserirusuario', authenticateToken, validacao.validacoes.usuario, CT_insert.inserirUsuario);
 router.delete('/deleteusuario/:id', authenticateToken, CT_delete.deleteUsuario);
-router.put('/atualizarusuario/:id', authenticateToken, validacao.validacoes.usuario, CT_update.atualizarUsuario);
+// Use a lighter validator for updates (password optional)
+router.put('/atualizarusuario/:id', authenticateToken, validacao.validacoes.usuario_update, CT_update.atualizarUsuario);
 
 // Usuario-Projeto (Gerenciar associações de usuários em projetos)
 // GET - listar todos

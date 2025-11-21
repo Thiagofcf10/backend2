@@ -81,6 +81,8 @@ CREATE TABLE projetos (
     orientador INT NOT NULL,
     coorientador VARCHAR(255) NOT NULL,
     matricula_alunos VARCHAR(255) NOT NULL,
+    published BOOLEAN NOT NULL DEFAULT FALSE,
+    published_at DATETIME DEFAULT NULL,
     FOREIGN KEY (orientador) REFERENCES professores(id)
 );
 
@@ -123,7 +125,7 @@ CREATE TABLE meusprojetos (
 CREATE TABLE arquivos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    id_meuprojeto INT NOT NULL,
+    id_meuprojeto INT DEFAULT NULL,
     resumo TEXT NOT NULL,
     justificativa TEXT NOT NULL,
     objetivo TEXT NOT NULL,

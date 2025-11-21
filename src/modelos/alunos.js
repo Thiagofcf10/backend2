@@ -41,4 +41,15 @@ const atualizarAluno = async (id, aluno) => {
   return updated;
 };
 
-module.exports = { getAlunos, getAlunosTotal, inserirAluno, deleteAluno, atualizarAluno }; // Exporta a função para ser usada em outras partes do aplicativo
+const getAlunoById = async (id) => {
+  const [rows] = await connection.execute('SELECT * FROM alunos WHERE id = ?', [id]);
+  return rows && rows.length ? rows[0] : null;
+};
+
+// Get aluno record by linked usuario_id
+const getAlunoByUsuarioId = async (usuario_id) => {
+  const [rows] = await connection.execute('SELECT * FROM alunos WHERE usuario_id = ? LIMIT 1', [usuario_id]);
+  return rows && rows.length ? rows[0] : null;
+};
+
+module.exports = { getAlunos, getAlunosTotal, inserirAluno, deleteAluno, atualizarAluno, getAlunoById, getAlunoByUsuarioId }; // Exporta a função para ser usada em outras partes do aplicativo

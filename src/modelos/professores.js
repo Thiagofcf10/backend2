@@ -42,4 +42,9 @@ const atualizarProfessor = async (id, professor) => {
   return updated;
 };
 
-module.exports = { getProfessores, getProfessoresTotal, inserirProfessor, deleteProfessor, atualizarProfessor }; // Exporta a função para ser usada em outras partes do aplicativo
+const getProfessorById = async (id) => {
+  const [rows] = await connection.execute('SELECT * FROM professores WHERE id = ?', [id]);
+  return rows && rows.length ? rows[0] : null;
+};
+
+module.exports = { getProfessores, getProfessoresTotal, inserirProfessor, deleteProfessor, atualizarProfessor, getProfessorById }; // Exporta a função para ser usada em outras partes do aplicativo

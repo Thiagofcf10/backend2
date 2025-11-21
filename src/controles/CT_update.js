@@ -13,7 +13,25 @@ const usuarios = require('../modelos/usuarios');
 const wrapUpdate = (fn) => async (req, res) => {
     try {
         const { id } = req.params;
+        // Debug: log incoming update payload for easier troubleshooting
+        try {
+            console.log(`[CT_update] update request for id=${id} body=`, req.body);
+        } catch (e) {
+            // ignore logging errors
+        }
         await fn(id, req.body);
+        return res.status(204).send();
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+// Special wrapper to allow passing multer file to the update function for arquivos
+const wrapUpdateWithFile = (fn) => async (req, res) => {
+    try {
+        const { id } = req.params;
+        // pass both body and file (file may be undefined)
+        await fn(id, req.body, req.file);
         return res.status(204).send();
     } catch (err) {
         return res.status(500).json({ error: err.message });
@@ -23,7 +41,7 @@ const wrapUpdate = (fn) => async (req, res) => {
 const atualizarAluno = wrapUpdate(alunos.atualizarAluno);
 const atualizarProfessor = wrapUpdate(professores.atualizarProfessor);
 const atualizarAreaAcademica = wrapUpdate(areas.atualizarAreaAcademica);
-const atualizarArquivo = wrapUpdate(arquivos.atualizarArquivo);
+const atualizarArquivo = wrapUpdateWithFile(arquivos.atualizarArquivo);
 const atualizarCurso = wrapUpdate(cursos.atualizarCurso);
 const atualizarCusto = wrapUpdate(custos.atualizarCusto);
 const atualizarMeuProjeto = wrapUpdate(meusprojetos.atualizarMeuProjeto);
@@ -32,4 +50,16 @@ const atualizarRegistro = wrapUpdate(registros.atualizarRegistro);
 const atualizarTurma = wrapUpdate(turmas.atualizarTurma);
 const atualizarUsuario = wrapUpdate(usuarios.atualizarUsuario);
 
-module.exports = { atualizarAluno, atualizarProfessor, atualizarAreaAcademica, atualizarArquivo, atualizarCurso, atualizarCusto, atualizarMeuProjeto, atualizarProjeto, atualizarRegistro, atualizarTurma, atualizarUsuario };
+// Publish/unpublish a project
+const publicarProjeto = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { published } = req.body;
+        await projetos.publicarProjeto(id, !!published);
+        return res.status(204).send();
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+module.exports = { atualizarAluno, atualizarProfessor, atualizarAreaAcademica, atualizarArquivo, atualizarCurso, atualizarCusto, atualizarMeuProjeto, atualizarProjeto, atualizarRegistro, atualizarTurma, atualizarUsuario, publicarProjeto };

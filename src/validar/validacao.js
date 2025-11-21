@@ -61,6 +61,11 @@ const validacoes = {
     { nome: 'email', exibicao: 'Email' },
     { nome: 'password', exibicao: 'Senha' }
   ]),
+  // validator for updating user (password optional)
+  usuario_update: validarCamposObrigatorios([
+    { nome: 'nome_usuario', exibicao: 'Nome do usuário' },
+    { nome: 'email', exibicao: 'Email' }
+  ]),
 
   turma: validarCamposObrigatorios([
     { nome: 'cod_turma', exibicao: 'Código da turma' },
@@ -74,7 +79,11 @@ const validacoes = {
 
   projeto: validarCamposObrigatorios([
     { nome: 'nome_projeto', exibicao: 'Nome do projeto' },
-    { nome: 'orientador', exibicao: 'Orientador' }
+    // orientador será atribuído automaticamente a partir do usuário autenticado
+  ]),
+  // validator for creating a project (client does not need to send orientador)
+  projeto_create: validarCamposObrigatorios([
+    { nome: 'nome_projeto', exibicao: 'Nome do projeto' }
   ]),
 
   meuprojeto: validarCamposObrigatorios([
