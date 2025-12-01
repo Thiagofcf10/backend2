@@ -6,8 +6,10 @@ const path = require('path');
 const app = express();
 
 // Suporta múltiplas origens via FRONTEND_ORIGINS (vírgula-separado) ou fallback FRONTEND_ORIGIN
-const FRONTEND_ORIGINS = (process.env.FRONTEND_ORIGINS && process.env.FRONTEND_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)) ||
-  (process.env.FRONTEND_ORIGIN ? [process.env.FRONTEND_ORIGIN] : ['http://localhost:3000']);
+// Normalize configured origins (remove trailing slashes)
+const rawOrigins = (process.env.FRONTEND_ORIGINS && process.env.FRONTEND_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)) ||
+  (process.env.FRONTEND_ORIGIN ? [process.env.FRONTEND_ORIGIN] : ['https://frontrepo-git-main-thiago-felipes-projects-07cc9589.vercel.app']);
+const FRONTEND_ORIGINS = rawOrigins.map(s => s.replace(/\/+$/, ''));
 
 // Configuração de CORS com whitelist dinâmica. Usa função para validar origem e manter 'credentials: true'.
 app.use(cors({
@@ -31,7 +33,8 @@ app.use(cors({
 // Headers adicionais e política de segurança para permitir embedding (iframe)
 app.use((req, res, next) => {
   // Ajustar cabeçalhos CORS dinamicamente com base no origin permitido
-  const reqOrigin = req.headers.origin;
+  const reqOriginRaw = req.headers.origin;
+  const reqOrigin = reqOriginRaw ? String(reqOriginRaw).replace(/\/+$/, '') : null;
   if (reqOrigin && FRONTEND_ORIGINS.indexOf(reqOrigin) !== -1) {
     res.header('Access-Control-Allow-Origin', reqOrigin);
     res.header('Access-Control-Allow-Credentials', 'true');
