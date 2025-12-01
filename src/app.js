@@ -5,26 +5,43 @@ const path = require('path');
 
 const app = express();
 
-// Origem do frontend (use .env para configurar se preciso)
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:3000';
+// Suporta múltiplas origens via FRONTEND_ORIGINS (vírgula-separado) ou fallback FRONTEND_ORIGIN
+const FRONTEND_ORIGINS = (process.env.FRONTEND_ORIGINS && process.env.FRONTEND_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)) ||
+  (process.env.FRONTEND_ORIGIN ? [process.env.FRONTEND_ORIGIN] : ['http://localhost:3000']);
 
-// Configuração de CORS permitindo apenas a origem do frontend e credenciais
+// Configuração de CORS com whitelist dinâmica. Usa função para validar origem e manter 'credentials: true'.
 app.use(cors({
-  origin: FRONTEND_ORIGIN,
+  origin: function(origin, callback) {
+    // allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+
+    // During development, allow any localhost origin variants (convenience)
+    const isDev = (process.env.NODE_ENV || 'development') === 'development';
+    if (isDev && (/localhost|127\.0\.0\.1|::1/).test(origin)) return callback(null, true);
+
+    if (FRONTEND_ORIGINS.indexOf(origin) !== -1) return callback(null, true);
+    return callback(new Error('Origin not allowed by CORS'));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-api-key'],
-  credentials: true
+  credentials: true,
+  optionsSuccessStatus: 204
 }));
 
 // Headers adicionais e política de segurança para permitir embedding (iframe)
 app.use((req, res, next) => {
-  // Forçar origem específica (evita usar '*') quando credentials = true
-  res.header('Access-Control-Allow-Origin', FRONTEND_ORIGIN);
-  res.header('Access-Control-Allow-Credentials', 'true');
+  // Ajustar cabeçalhos CORS dinamicamente com base no origin permitido
+  const reqOrigin = req.headers.origin;
+  if (reqOrigin && FRONTEND_ORIGINS.indexOf(reqOrigin) !== -1) {
+    res.header('Access-Control-Allow-Origin', reqOrigin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Content-Security-Policy', `frame-ancestors 'self' ${reqOrigin}`);
+  } else if (reqOrigin) {
+    // Helpful warning for debugging CORS in development
+    console.warn(`CORS: origin not in whitelist: ${reqOrigin} (allowed: ${FRONTEND_ORIGINS.join(',')})`);
+  }
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-api-key');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  // Permitir que a página /admin seja embutida pelo frontend
-  res.header('Content-Security-Policy', `frame-ancestors 'self' ${FRONTEND_ORIGIN}`);
 
   // Preflight quick response
   if (req.method === 'OPTIONS') {
@@ -66,6 +83,18 @@ app.get('/admin', (req, res) => {
   } catch (err) {
     console.error('Erro ao redirecionar /admin:', err);
     return res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
+  }
+});
+
+// Debug: mostrar as origens permitidas e se a origem da requisição é aceita
+app.get('/debug/cors', (req, res) => {
+  try {
+    const FRONTENDS = FRONTEND_ORIGINS || [];
+    const origin = req.headers.origin || null;
+    const isAllowed = origin ? (FRONTENDS.indexOf(origin) !== -1 || ((process.env.NODE_ENV || 'development') === 'development' && (/localhost|127\.0\.0\.1|::1/).test(origin))) : false;
+    return res.status(200).json({ allowedOrigins: FRONTENDS, requestOrigin: origin, isAllowed });
+  } catch (err) {
+    return res.status(500).json({ error: 'erro ao verificar cors', message: err.message });
   }
 });
 

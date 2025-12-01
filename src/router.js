@@ -9,6 +9,7 @@ const CT_usuario_projeto = require('./controles/CT_usuario_projeto');
 const validacao = require('./validar/validacao');
 const { authenticateToken } = require('./autenticacao/auth');
 const apiKeyAuth = require('./middlewares/apiKey');
+const publicAccess = require('./middlewares/publicAccess');
 const upload = require('./middlewares/upload');
 const connection = require('./DBmysql/conectaraoDB');
 
@@ -51,6 +52,8 @@ router.post('/login', CT_auth.loginController);
 router.post('/register', CT_auth.registerController);
 router.get('/verify', authenticateToken, CT_auth.verifyController);
 router.post('/logout', CT_auth.logoutController);
+// Gerar token temporário para convidados (não precisa autenticar)
+router.post('/guest-token', CT_auth.guestTokenController);
 
 // GET (Leitura) - acessível via API key (URL + api_key or header x-api-key)
 router.get('/selectaluno', apiKeyAuth, CT_select.getAlunos);
@@ -68,10 +71,13 @@ router.get('/selectmeusprojetos', apiKeyAuth, CT_select.getMeusProjetos);
 router.get('/selectmeusprojetos/:usuario_id', apiKeyAuth, CT_select.getMeusProjetosByUsuario);
 router.get('/selectprojetos', apiKeyAuth, CT_select.getProjetos);
 // Public listing of published projects
-router.get('/selectprojetos_publicos', apiKeyAuth, CT_select.getProjetosPublicos);
+router.get('/selectprojetos_publicos', publicAccess, CT_select.getProjetosPublicos);
 // single projeto by id
 router.get('/selectprojetos/:id', apiKeyAuth, CT_select.getProjetoById);
 router.get('/selectregistros', apiKeyAuth, CT_select.getRegistros);
+// Plain-text export of registros; optional ?projeto_id=ID to limit to a single project
+// Plain-text export of registros: require authenticated user (token) for better security
+router.get('/selectregistros_txt', authenticateToken, CT_select.getRegistrosTxt);
 router.get('/selectturmas', apiKeyAuth, CT_select.getTurmas);
 router.get('/selectusuarios', apiKeyAuth, CT_select.getUsuarios);
 

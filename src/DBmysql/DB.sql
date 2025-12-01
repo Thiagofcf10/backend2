@@ -106,6 +106,7 @@ CREATE TABLE registros (
     lista_participantes TEXT NOT NULL, -- Pode ser uma lista de nomes ou IDs
     duracao_reuniao TIME NOT NULL, -- Armazena a duração no formato HH:MM:SS
     titulo_reuniao VARCHAR(255) NOT NULL,
+    relatorio TEXT DEFAULT NULL,
     FOREIGN KEY (id_projeto) REFERENCES projetos(id)
 );
 

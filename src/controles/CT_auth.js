@@ -48,6 +48,22 @@ const registerController = async (req, res) => {
 };
 
 /**
+ * POST /guest-token - Gerar token temporário para convidados (sem necessidade de autenticação)
+ * Body (opcional): { expiry: '1h' }
+ * Response: { token }
+ */
+const guestTokenController = (req, res) => {
+  try {
+    const { expiry } = req.body || {};
+    const result = auth.generateGuestToken ? auth.generateGuestToken(expiry) : auth.generateGuestToken(expiry);
+    return res.status(200).json({ message: 'Guest token gerado', token: result.token });
+  } catch (err) {
+    console.error('Erro ao gerar guest token:', err);
+    return res.status(500).json({ error: 'Erro ao gerar guest token' });
+  }
+};
+
+/**
  * GET /verify - Verificar se token é válido
  * Header: Authorization: Bearer <token>
  * Response: { user }
@@ -72,6 +88,7 @@ const logoutController = (req, res) => {
 module.exports = {
   loginController,
   registerController,
+  guestTokenController,
   verifyController,
   logoutController
 };

@@ -163,6 +163,72 @@ const getProjetoById = async (req, res) => {
   }
 };
 const getRegistros = wrapGetSimple(registros.getRegistros, registros.getRegistrosTotal, 'Registros', 'registros');
+
+// Generate a plain-text export of registros. If ?projeto_id=ID is provided, export only that project's registros;
+// otherwise export registros grouped by project.
+const getRegistrosTxt = async (req, res) => {
+  try {
+    const projetoId = req.query && req.query.projeto_id;
+
+    let rows = [];
+    if (projetoId) {
+      rows = await registros.getRegistrosByProjeto(projetoId);
+      // single project export
+      const projectName = (rows && rows.length && rows[0].nome_projeto) ? rows[0].nome_projeto : `projeto_${projetoId}`;
+      let content = `Registros de reuniões - Projeto: ${projectName} (ID: ${projetoId})\n\n`;
+      if (!rows || rows.length === 0) content += 'Nenhum registro encontrado.\n';
+      else {
+        rows.forEach((r, idx) => {
+          content += `#${idx + 1} - Data: ${r.data_reuniao} | Duração: ${r.duracao_reuniao} | Título: ${r.titulo_reuniao}\n`;
+          content += `Participantes: ${r.lista_participantes}\n`;
+          content += `Relatório:\n${r.relatorio || ''}\n`;
+          content += '----------------------------------------\n';
+        });
+      }
+
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="registros_projeto_${projetoId}.txt"`);
+      return res.status(200).send(content);
+    }
+
+    // export all registros grouped by project
+    rows = await registros.getAllRegistrosWithProject();
+    let content = `Registros de reuniões - Todos os projetos\n\n`;
+    if (!rows || rows.length === 0) content += 'Nenhum registro encontrado.\n';
+    else {
+      // group by projeto id
+      const grouped = {};
+      rows.forEach((r) => {
+        const pid = r.id_projeto || 'sem_projeto';
+        if (!grouped[pid]) grouped[pid] = { nome: r.nome_projeto || `projeto_${pid}`, registros: [] };
+        grouped[pid].registros.push(r);
+      });
+
+      for (const pid of Object.keys(grouped)) {
+        const grp = grouped[pid];
+        content += `Projeto: ${grp.nome} (ID: ${pid})\n`;
+        content += '========================================\n';
+        if (grp.registros.length === 0) content += 'Nenhum registro encontrado.\n\n';
+        else {
+          grp.registros.forEach((r, idx) => {
+            content += `#${idx + 1} - Data: ${r.data_reuniao} | Duração: ${r.duracao_reuniao} | Título: ${r.titulo_reuniao}\n`;
+            content += `Participantes: ${r.lista_participantes}\n`;
+            content += `Relatório:\n${r.relatorio || ''}\n`;
+            content += '----------------------------------------\n';
+          });
+          content += '\n';
+        }
+      }
+    }
+
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="registros_todos_projetos.txt"`);
+    return res.status(200).send(content);
+  } catch (err) {
+    console.error('Erro ao gerar exportacao de registros:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
 const getTurmas = wrapGetSimple(turmas.getTurmas, turmas.getTurmasTotal, 'Turmas', 'turmas');
 const getUsuarios = wrapGetSimple(usuarios.getUsuarios, usuarios.getUsuariosTotal, 'Usuários', 'usuarios');
 
@@ -194,4 +260,4 @@ const getProfessorById = async (req, res) => {
   }
 };
 
-module.exports = { getAlunos, getProfessores, getAreasAcademicas, getArquivos, getArquivoById, getAlunoById, getProfessorById, getCursos, getCustos, getMeusProjetos, getMeusProjetosByUsuario, getProjetos, getProjetoById, getProjetosPublicos, getRegistros, getTurmas, getUsuarios };
+module.exports = { getAlunos, getProfessores, getAreasAcademicas, getArquivos, getArquivoById, getAlunoById, getProfessorById, getCursos, getCustos, getMeusProjetos, getMeusProjetosByUsuario, getProjetos, getProjetoById, getProjetosPublicos, getRegistros, getRegistrosTxt, getTurmas, getUsuarios };

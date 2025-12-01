@@ -37,8 +37,21 @@ const login = async (email, password) => {
   }
 
   // Gerar token JWT
+  // determine role: check professores and alunos tables
+  let role = 'usuario';
+  try {
+    const [profRows] = await connection.execute('SELECT id FROM professores WHERE usuario_id = ? LIMIT 1', [user.id]);
+    if (profRows && profRows.length > 0) role = 'professor';
+    else {
+      const [alRows] = await connection.execute('SELECT id FROM alunos WHERE usuario_id = ? LIMIT 1', [user.id]);
+      if (alRows && alRows.length > 0) role = 'aluno';
+    }
+  } catch (e) {
+    // ignore role-detection errors and fall back to 'usuario'
+  }
+
   const token = jwt.sign(
-    { id: user.id, email: user.email, nome: user.nome_usuario },
+    { id: user.id, email: user.email, nome: user.nome_usuario, role },
     SECRET_KEY,
     { expiresIn: TOKEN_EXPIRY }
   );
@@ -48,9 +61,21 @@ const login = async (email, password) => {
     user: {
       id: user.id,
       nome_usuario: user.nome_usuario,
-      email: user.email
+      email: user.email,
+      role
     }
   };
+};
+
+/**
+ * Gerar token para convidado (sem usuário)
+ * @param {string} [expiry] - string de expiração tipo '2h' (opcional)
+ */
+const generateGuestToken = (expiry) => {
+  const guestExpiry = expiry || process.env.GUEST_TOKEN_EXPIRY || '2h';
+  const payload = { role: 'guest', scope: ['public_projects'] };
+  const token = jwt.sign(payload, SECRET_KEY, { expiresIn: guestExpiry });
+  return { token };
 };
 
 /**
@@ -148,6 +173,7 @@ const decodeToken = (token) => {
 module.exports = {
   login,
   register,
+  generateGuestToken,
   verifyToken,
   authenticateToken,
   decodeToken,
