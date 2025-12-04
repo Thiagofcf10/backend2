@@ -11,10 +11,10 @@ const getProjetosTotal = async () => {
 };
 
 const inserirProjeto = async (projeto) => {
-  const { nome_projeto, orientador, coorientador, matricula_alunos, published, published_at } = projeto;
+  const { nome_projeto, orientador, coorientador, matricula_alunos, nome_autores, tipo_projeto, published, published_at, destaque } = projeto;
   const query = `
-    INSERT INTO projetos (nome_projeto, orientador, coorientador, matricula_alunos, published, published_at)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO projetos (nome_projeto, orientador, coorientador, matricula_alunos, nome_autores, tipo_projeto, published, published_at, destaque)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const [result] = await connection.execute(query, [
@@ -22,8 +22,11 @@ const inserirProjeto = async (projeto) => {
     orientador || 1,
     coorientador || '',
     matricula_alunos || '',
+    nome_autores || null,
+    tipo_projeto || 'Integrador',
     published ? 1 : 0,
-    published_at || null
+    published_at || null,
+    destaque ? 1 : 0
   ]);
   return { insertId: result.insertId };
 };
@@ -34,10 +37,10 @@ const deleteProjeto = async (id) => {
 };
 
 const atualizarProjeto = async (id, projeto) => {
-  const { nome_projeto, orientador, coorientador, matricula_alunos, published, published_at } = projeto;
-  const query = 'UPDATE projetos SET nome_projeto = ?, orientador = ?, coorientador = ?, matricula_alunos = ?, published = ?, published_at = ? WHERE id = ?';
+  const { nome_projeto, orientador, coorientador, matricula_alunos, nome_autores, tipo_projeto, published, published_at, destaque } = projeto;
+  const query = 'UPDATE projetos SET nome_projeto = ?, orientador = ?, coorientador = ?, matricula_alunos = ?, nome_autores = ?, tipo_projeto = ?, published = ?, published_at = ?, destaque = ? WHERE id = ?';
 
-  const [updated] = await connection.execute(query, [nome_projeto, orientador, coorientador, matricula_alunos, published ? 1 : 0, published_at || null, id]);
+  const [updated] = await connection.execute(query, [nome_projeto, orientador, coorientador, matricula_alunos, nome_autores || null, tipo_projeto || 'Integrador', published ? 1 : 0, published_at || null, destaque ? 1 : 0, id]);
   return updated;
 };
 
@@ -61,6 +64,12 @@ const getProjetosPublicos = async () => {
   return rows;
 };
 
+const getProjetosDestaques = async () => {
+  // Return projects that are marked as destaque (regardless of published state)
+  const [rows] = await connection.execute('SELECT * FROM projetos WHERE destaque = 1 ORDER BY published_at DESC');
+  return rows;
+};
+
 // Get single projeto by id
 const getProjetoById = async (id) => {
   const [rows] = await connection.execute('SELECT * FROM projetos WHERE id = ?', [id]);
@@ -75,4 +84,11 @@ const publicarProjeto = async (id, published) => {
   return updated;
 };
 
-module.exports = { getProjetos, getProjetosTotal, inserirProjeto, deleteProjeto, atualizarProjeto, getProjetosByOrientador, getProjetosByMatricula, getProjetosPublicos, publicarProjeto, getProjetoById };
+// Set destaque flag for a project (boolean-like)
+const setDestaque = async (id, destaque) => {
+  const query = 'UPDATE projetos SET destaque = ? WHERE id = ?';
+  const [updated] = await connection.execute(query, [destaque ? 1 : 0, id]);
+  return updated;
+};
+
+module.exports = { getProjetos, getProjetosTotal, inserirProjeto, deleteProjeto, atualizarProjeto, getProjetosByOrientador, getProjetosByMatricula, getProjetosPublicos, publicarProjeto, getProjetoById, getProjetosDestaques, setDestaque };

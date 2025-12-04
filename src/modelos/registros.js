@@ -26,10 +26,10 @@ const getRegistrosTotal = async () => {
 };
 
 const inserirRegistro = async (registro) => {
-  const { id_projeto, data_reuniao, lista_participantes, duracao_reuniao, titulo_reuniao, relatorio } = registro;
+  const { id_projeto, data_reuniao, lista_participantes, duracao_reuniao, titulo_reuniao, relatorio, relatorio_edit_deadline, relatorio_edit_allowed } = registro;
   const query = `
-    INSERT INTO registros (id_projeto, data_reuniao, lista_participantes, duracao_reuniao, titulo_reuniao, relatorio)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO registros (id_projeto, data_reuniao, lista_participantes, duracao_reuniao, titulo_reuniao, relatorio, relatorio_edit_deadline, relatorio_edit_allowed)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const [result] = await connection.execute(query, [
@@ -38,7 +38,9 @@ const inserirRegistro = async (registro) => {
     lista_participantes || '',
     duracao_reuniao || '00:00:00',
     titulo_reuniao || '',
-    relatorio || null
+    relatorio || null,
+    relatorio_edit_deadline || null,
+    relatorio_edit_allowed || null
   ]);
   return { insertId: result.insertId };
 };
@@ -49,11 +51,23 @@ const deleteRegistro = async (id) => {
 };
 
 const atualizarRegistro = async (id, registro) => {
-  const { id_projeto, data_reuniao, lista_participantes, duracao_reuniao, titulo_reuniao, relatorio } = registro;
-  const query = 'UPDATE registros SET id_projeto = ?, data_reuniao = ?, lista_participantes = ?, duracao_reuniao = ?, titulo_reuniao = ?, relatorio = ? WHERE id = ?';
+  const { id_projeto, data_reuniao, lista_participantes, duracao_reuniao, titulo_reuniao, relatorio, relatorio_edit_deadline, relatorio_edit_allowed } = registro;
+  const query = 'UPDATE registros SET id_projeto = ?, data_reuniao = ?, lista_participantes = ?, duracao_reuniao = ?, titulo_reuniao = ?, relatorio = ?, relatorio_edit_deadline = ?, relatorio_edit_allowed = ? WHERE id = ?';
 
-  const [updated] = await connection.execute(query, [id_projeto, data_reuniao, lista_participantes, duracao_reuniao, titulo_reuniao, relatorio || null, id]);
+  const [updated] = await connection.execute(query, [id_projeto, data_reuniao, lista_participantes, duracao_reuniao, titulo_reuniao, relatorio || null, relatorio_edit_deadline || null, relatorio_edit_allowed || null, id]);
   return updated;
 };
 
-module.exports = { getRegistros, getRegistrosTotal, inserirRegistro, deleteRegistro, atualizarRegistro, getRegistrosByProjeto, getAllRegistrosWithProject };
+const getRegistroById = async (id) => {
+  const [rows] = await connection.execute('SELECT * FROM registros WHERE id = ?', [id]);
+  return rows && rows.length ? rows[0] : null;
+};
+
+// Update only relatorio field (used by students when allowed)
+const atualizarRelatorio = async (id, relatorio) => {
+  const query = 'UPDATE registros SET relatorio = ? WHERE id = ?';
+  const [updated] = await connection.execute(query, [relatorio || null, id]);
+  return updated;
+};
+
+module.exports = { getRegistros, getRegistrosByProjeto, getAllRegistrosWithProject, getRegistrosTotal, inserirRegistro, deleteRegistro, atualizarRegistro, getRegistroById, atualizarRelatorio };

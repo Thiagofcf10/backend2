@@ -81,8 +81,11 @@ CREATE TABLE projetos (
     orientador INT NOT NULL,
     coorientador VARCHAR(255) NOT NULL,
     matricula_alunos VARCHAR(255) NOT NULL,
+    nome_autores TEXT DEFAULT NULL,
+    tipo_projeto VARCHAR(100) DEFAULT 'Integrador',
     published BOOLEAN NOT NULL DEFAULT FALSE,
     published_at DATETIME DEFAULT NULL,
+    destaque TINYINT(1) DEFAULT 0,
     FOREIGN KEY (orientador) REFERENCES professores(id)
 );
 
@@ -107,6 +110,8 @@ CREATE TABLE registros (
     duracao_reuniao TIME NOT NULL, -- Armazena a duração no formato HH:MM:SS
     titulo_reuniao VARCHAR(255) NOT NULL,
     relatorio TEXT DEFAULT NULL,
+    relatorio_edit_deadline DATETIME DEFAULT NULL,
+    relatorio_edit_allowed TEXT DEFAULT NULL,
     FOREIGN KEY (id_projeto) REFERENCES projetos(id)
 );
 

@@ -103,6 +103,17 @@ const getProjetosPublicos = async (req, res) => {
   }
 };
 
+// Featured projects (destaques)
+const getProjetosDestaques = async (req, res) => {
+  try {
+    const rows = await projetos.getProjetosDestaques();
+    return res.status(200).json({ message: 'Projetos em destaque obtidos com sucesso', data: rows, total: rows.length });
+  } catch (err) {
+    console.error('Erro ao obter projetos em destaque', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 // Get projects for a given user based on role/type
 const getMeusProjetosByUsuario = async (req, res) => {
   try {
@@ -260,4 +271,4 @@ const getProfessorById = async (req, res) => {
   }
 };
 
-module.exports = { getAlunos, getProfessores, getAreasAcademicas, getArquivos, getArquivoById, getAlunoById, getProfessorById, getCursos, getCustos, getMeusProjetos, getMeusProjetosByUsuario, getProjetos, getProjetoById, getProjetosPublicos, getRegistros, getRegistrosTxt, getTurmas, getUsuarios };
+module.exports = { getAlunos, getProfessores, getAreasAcademicas, getArquivos, getArquivoById, getAlunoById, getProfessorById, getCursos, getCustos, getMeusProjetos, getMeusProjetosByUsuario, getProjetos, getProjetoById, getProjetosPublicos, getProjetosDestaques, getRegistros, getRegistrosTxt, getTurmas, getUsuarios };

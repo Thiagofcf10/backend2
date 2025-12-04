@@ -72,6 +72,8 @@ router.get('/selectmeusprojetos/:usuario_id', apiKeyAuth, CT_select.getMeusProje
 router.get('/selectprojetos', apiKeyAuth, CT_select.getProjetos);
 // Public listing of published projects
 router.get('/selectprojetos_publicos', publicAccess, CT_select.getProjetosPublicos);
+// Public listing of featured projects (destaques)
+router.get('/selectprojetos_destaques', publicAccess, CT_select.getProjetosDestaques);
 // single projeto by id
 router.get('/selectprojetos/:id', apiKeyAuth, CT_select.getProjetoById);
 router.get('/selectregistros', apiKeyAuth, CT_select.getRegistros);
@@ -128,13 +130,19 @@ router.put('/atualizarmeusprojeto/:id', authenticateToken, validacao.validacoes.
 // validation errors if an older validator still expects orientador in the body.
 router.post('/inserirprojeto', authenticateToken, ensureOrientadorFromUser, validacao.validacoes.projeto_create, CT_insert.inserirProjeto);
 router.delete('/deleteprojeto/:id', authenticateToken, CT_delete.deleteProjeto);
-router.put('/atualizarprojeto/:id', authenticateToken, validacao.validacoes.projeto, CT_update.atualizarProjeto);
+router.post('/inserirprojeto', authenticateToken, ensureOrientadorFromUser, validacao.validacoes.projeto_create, validacao.validarDestaque, CT_insert.inserirProjeto);
+
+router.put('/atualizarprojeto/:id', authenticateToken, validacao.validacoes.projeto, validacao.validarDestaque, CT_update.atualizarProjeto);
+// Toggle destaque for a project (authenticated)
+router.put('/destaqueprojeto/:id', authenticateToken, CT_update.toggleDestaque);
 // Publish/unpublish a project (authenticated)
 router.put('/publicarprojeto/:id', authenticateToken, CT_update.publicarProjeto);
 
 // Registros
 router.post('/inserirregistro', authenticateToken, CT_insert.inserirRegistro);
 router.delete('/deleteregistro/:id', authenticateToken, CT_delete.deleteRegistro);
+// Update only the relatorio field with permission checks for students
+router.put('/atualizarrelatorio/:id', authenticateToken, CT_update.atualizarRelatorio);
 router.put('/atualizarregistro/:id', authenticateToken, CT_update.atualizarRegistro);
 
 // Turmas

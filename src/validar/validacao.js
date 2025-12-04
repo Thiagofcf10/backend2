@@ -34,6 +34,24 @@ const validarCamposObrigatorios = (campos) => {
   };
 };
 
+// Optional validator to ensure destaque, if provided, is 0/1 or boolean
+const validarDestaque = (request, response, next) => {
+  try {
+    const { body } = request;
+    if (body && body.destaque !== undefined && body.destaque !== null) {
+      const val = body.destaque;
+      // Accept boolean or numeric 0/1 or string '0'/'1'
+      if (typeof val === 'boolean') return next();
+      const num = Number(val);
+      if (!Number.isNaN(num) && (num === 0 || num === 1)) return next();
+      return response.status(400).json({ message: 'Campo destaque inválido. Use 0 ou 1.' });
+    }
+    return next();
+  } catch (err) {
+    return next();
+  }
+};
+
 // Validadores específicos legados (mantidos para compatibilidade)
 const validarnome = validarCampoObrigatorio('nome_aluno', 'nome do aluno');
 
@@ -85,6 +103,10 @@ const validacoes = {
   projeto_create: validarCamposObrigatorios([
     { nome: 'nome_projeto', exibicao: 'Nome do projeto' }
   ]),
+  // validator for updating a project (tipo_projeto is optional)
+  projeto_update: validarCamposObrigatorios([
+    { nome: 'nome_projeto', exibicao: 'Nome do projeto' }
+  ]),
 
   meuprojeto: validarCamposObrigatorios([
     { nome: 'nome_projeto', exibicao: 'Nome do projeto' },
@@ -97,5 +119,6 @@ module.exports = {
   telefone,
   validarCampoObrigatorio,
   validarCamposObrigatorios,
+  validarDestaque,
   validacoes
 };
