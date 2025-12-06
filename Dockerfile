@@ -9,6 +9,7 @@ RUN npm install --production
 # copy source
 COPY . .
 
+
 EXPOSE 3333
 
 CMD ["node", "src/server.js"]
