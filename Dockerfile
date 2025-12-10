@@ -4,7 +4,8 @@ WORKDIR /app
 
 # copy package files first for caching
 COPY package*.json ./
-RUN npm install --production
+ENV NODE_ENV=production
+RUN npm ci --only=production || npm install --production
 
 # copy source
 COPY . .

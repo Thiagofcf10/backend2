@@ -6,8 +6,12 @@ const path = require('path');
 const app = express();
 
 // Suporta múltiplas origens via FRONTEND_ORIGINS (vírgula-separado) ou fallback FRONTEND_ORIGIN
-const FRONTEND_ORIGINS = (process.env.FRONTEND_ORIGINS && process.env.FRONTEND_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)) ||
-  (process.env.FRONTEND_ORIGIN ? [process.env.FRONTEND_ORIGIN] : ['http://localhost:3000']);
+const FRONTEND_ORIGINS = (
+  process.env.FRONTEND_ORIGINS && process.env.FRONTEND_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)
+) || (process.env.FRONTEND_ORIGIN ? [process.env.FRONTEND_ORIGIN] : ['http://repo_ifpa-nginx-1:80', 'http://frontrepo:3000']);
+
+// If no explicit FRONTEND_ORIGINS or FRONTEND_ORIGIN provided, allow any origin
+const ALLOW_ANY_ORIGIN = !(process.env.FRONTEND_ORIGINS || process.env.FRONTEND_ORIGIN);
 
 // Configuração de CORS com whitelist dinâmica. Usa função para validar origem e manter 'credentials: true'.
 app.use(cors({
@@ -18,6 +22,9 @@ app.use(cors({
     // During development, allow any localhost origin variants (convenience)
     const isDev = (process.env.NODE_ENV || 'development') === 'development';
     if (isDev && (/localhost|127\.0\.0\.1|::1/).test(origin)) return callback(null, true);
+
+    // If explicitly allowed to accept any origin, permit and echo later
+    if (ALLOW_ANY_ORIGIN) return callback(null, true);
 
     if (FRONTEND_ORIGINS.indexOf(origin) !== -1) return callback(null, true);
     return callback(new Error('Origin not allowed by CORS'));
@@ -71,7 +78,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.get('/admin', (req, res) => {
   try {
     const frontendOrigin = (typeof FRONTEND_ORIGIN === 'string' && FRONTEND_ORIGIN) ? FRONTEND_ORIGIN.replace(/\/$/, '') : '';
-    const isLocalFrontend = frontendOrigin && (frontendOrigin.includes('localhost') || frontendOrigin.includes('127.0.0.1'));
+    const isLocalFrontend = frontendOrigin && (frontendOrigin.includes('localhost') || frontendOrigin.includes('127.0.0.1') || frontendOrigin.includes('frontrepo'));
 
     if (isLocalFrontend) {
       // Redireciona para o admin do frontend dev server
