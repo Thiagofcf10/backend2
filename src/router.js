@@ -5,6 +5,7 @@ const CT_insert = require('./controles/CT_insert');
 const CT_delete = require('./controles/CT_delete');
 const CT_update = require('./controles/CT_update');
 const CT_auth = require('./controles/CT_auth');
+const CT_otp = require('./controles/CT_otp');
 const CT_usuario_projeto = require('./controles/CT_usuario_projeto');
 const validacao = require('./validar/validacao');
 const { authenticateToken } = require('./autenticacao/auth');
@@ -50,6 +51,12 @@ const ensureOrientadorFromUser = async (req, res, next) => {
 // Autenticação
 router.post('/login', CT_auth.loginController);
 router.post('/register', CT_auth.registerController);
+// OTP (one-time password) via email
+router.post('/send-otp', CT_otp.sendOtpController);
+router.post('/verify-otp', CT_otp.verifyOtpController);
+// Password reset flow
+router.post('/request-password-reset', CT_otp.sendOtpController);
+router.post('/reset-password', CT_auth.resetPasswordController);
 router.get('/verify', authenticateToken, CT_auth.verifyController);
 router.post('/logout', CT_auth.logoutController);
 // Gerar token temporário para convidados (não precisa autenticar)
@@ -155,6 +162,9 @@ router.post('/inserirusuario', authenticateToken, validacao.validacoes.usuario, 
 router.delete('/deleteusuario/:id', authenticateToken, CT_delete.deleteUsuario);
 // Use a lighter validator for updates (password optional)
 router.put('/atualizarusuario/:id', authenticateToken, validacao.validacoes.usuario_update, CT_update.atualizarUsuario);
+
+// Inserir código de matrícula para professores (ex: gerar/registrar códigos autorizados)
+router.post('/inserircodigo_matricula_pro', authenticateToken, CT_insert.inserirCodigoMatriculaPro);
 
 // Usuario-Projeto (Gerenciar associações de usuários em projetos)
 // GET - listar todos

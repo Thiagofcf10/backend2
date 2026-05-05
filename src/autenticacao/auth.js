@@ -140,7 +140,7 @@ const verifyToken = async (token) => {
  * Middleware para proteger rotas
  * Verifica se o token está no header Authorization: Bearer <token>
  */
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Extrai token após "Bearer "
 
@@ -150,7 +150,29 @@ const authenticateToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, SECRET_KEY);
-    req.user = decoded; // Armazena dados do usuário na requisição
+
+    // If token contains a user id, ensure the user still exists and is active
+    if (decoded && decoded.id) {
+      try {
+        const [rows] = await connection.execute('SELECT id, ativo, nome_usuario, email FROM usuarios WHERE id = ? LIMIT 1', [decoded.id]);
+        if (!rows || rows.length === 0) {
+          return res.status(403).json({ error: 'Usuário não encontrado', message: 'Conta associada ao token não existe' });
+        }
+        const userRow = rows[0];
+        if (!userRow.ativo) {
+          return res.status(403).json({ error: 'Usuário inativo', message: 'Conta desativada' });
+        }
+        // merge the DB info into req.user so downstream handlers get up-to-date data
+        req.user = { ...decoded, nome_usuario: userRow.nome_usuario, email: userRow.email };
+        return next();
+      } catch (dbErr) {
+        console.error('Erro ao verificar usuário no authenticateToken:', dbErr && (dbErr.message || dbErr));
+        return res.status(500).json({ error: 'Erro interno ao verificar token' });
+      }
+    }
+
+    // No id in token: just attach decoded
+    req.user = decoded;
     next();
   } catch (err) {
     const message = err.name === 'TokenExpiredError' ? 'Token expirado' : 'Token inválido';

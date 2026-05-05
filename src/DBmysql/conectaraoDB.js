@@ -4,9 +4,9 @@ require('dotenv').config(); // Carrega as variáveis de ambiente do arquivo .env
 
 
 // Prefer non-colliding env var names so we don't pick up the OS user (e.g. process.env.USER)
-const DB_HOST = process.env.DB_HOST;
-const DB_USER = process.env.DB_USER;
-const DB_PASSWORD = process.env.DB_PASSWORD;
+const DB_HOST = process.env.DB_HOST || 'localhost';
+const DB_USER = process.env.DB_USER || 'root';
+const DB_PASSWORD = process.env.DB_PASSWORD || '112233';
 const DB_NAME = process.env.DB_NAME;
 
 if (!process.env.DB_USER && process.env.USER) {

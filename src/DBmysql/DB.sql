@@ -23,17 +23,26 @@ CREATE TABLE areas_academicas (
     nome_area VARCHAR(255) NOT NULL
 );
 
--- Tabela de professores ()
+-- Table of allowed professor matricula codes (must exist before professors table)
+CREATE TABLE IF NOT EXISTS codigo_matricula_pro (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    codigo VARCHAR(32) UNIQUE NOT NULL,
+    matricula_valida TINYINT(1) DEFAULT 1
+);
+
 CREATE TABLE professores (
     id INT AUTO_INCREMENT PRIMARY KEY,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     nome_professor VARCHAR(255) NOT NULL,
-    matricula_professor INT NOT NULL, -- `
+    matricula_professor VARCHAR(15) UNIQUE NOT NULL, -- store as string up to 15 chars
+    codigo_matricula VARCHAR(32) NOT NULL,
     id_area INT NOT NULL, -- Relacionado a `areas_academicas`
     usuario_id INT,
     telefone VARCHAR(20) NOT NULL,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
-    FOREIGN KEY (id_area) REFERENCES areas_academicas(id)
+    FOREIGN KEY (id_area) REFERENCES areas_academicas(id),
+    FOREIGN KEY (codigo_matricula) REFERENCES codigo_matricula_pro(codigo)
 );
 
 -- Tabela de alunos ()
@@ -41,7 +50,7 @@ CREATE TABLE alunos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     nome_aluno VARCHAR(255) NOT NULL,
-    matricula_aluno INT NOT NULL, -- `
+    matricula_aluno VARCHAR(11) NOT NULL UNIQUE, -- store as string (exactly 11 digits expected)
     id_curso INT NOT NULL, -- Relacionado a `cursos`
     usuario_id INT,
     telefone VARCHAR(20) NOT NULL,
@@ -159,5 +168,56 @@ CREATE TABLE usuario_projeto (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
     FOREIGN KEY (projeto_id) REFERENCES projetos(id) ON DELETE CASCADE
 );
+
+
+CREATE TABLE IF NOT EXISTS otps (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(255) NOT NULL,
+  code VARCHAR(128) NOT NULL,
+  purpose VARCHAR(50) DEFAULT 'generic',
+  ip VARCHAR(100),
+  expires_at DATETIME NOT NULL,
+  used TINYINT(1) DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS otp_attempts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(255),
+  ip VARCHAR(100),
+  action VARCHAR(50),
+  success TINYINT(1),
+  details TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Table of allowed professor matricula codes (created earlier and used by professors table)
+
+-- Trigger: prevent inserting a professor if the provided codigo_matricula is not present or not valid
+DELIMITER $$
+CREATE TRIGGER trg_professores_before_insert
+BEFORE INSERT ON professores
+FOR EACH ROW
+BEGIN
+    DECLARE valid_flag INT DEFAULT 0;
+    SELECT matricula_valida INTO valid_flag FROM codigo_matricula_pro WHERE codigo = NEW.codigo_matricula LIMIT 1;
+    IF valid_flag IS NULL OR valid_flag = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Código de matrícula inválido ou não autorizado';
+    END IF;
+END$$
+
+CREATE TRIGGER trg_professores_before_update
+BEFORE UPDATE ON professores
+FOR EACH ROW
+BEGIN
+    IF NEW.codigo_matricula <> OLD.codigo_matricula THEN
+        DECLARE valid_flag_up INT DEFAULT 0;
+        SELECT matricula_valida INTO valid_flag_up FROM codigo_matricula_pro WHERE codigo = NEW.codigo_matricula LIMIT 1;
+        IF valid_flag_up IS NULL OR valid_flag_up = 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Código de matrícula inválido ou não autorizado (update)';
+        END IF;
+    END IF;
+END$$
+DELIMITER ;
 
 ```

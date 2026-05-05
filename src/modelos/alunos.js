@@ -19,7 +19,7 @@ const inserirAluno = async (aluno) => {
 
   const [result] = await connection.execute(query, [
     nome_aluno || 'Aluno sem nome',
-    matricula_aluno || 0,
+    String(matricula_aluno || ''),
     id_curso || 1,
     usuario_id || null,
     telefone || ''

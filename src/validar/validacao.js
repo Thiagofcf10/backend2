@@ -66,7 +66,8 @@ const validacoes = {
 
   professor: validarCamposObrigatorios([
     { nome: 'nome_professor', exibicao: 'Nome do professor' },
-    { nome: 'matricula_professor', exibicao: 'Matrícula do professor' }
+    { nome: 'matricula_professor', exibicao: 'Matrícula do professor' },
+    { nome: 'codigo_matricula', exibicao: 'Código de matrícula' }
   ]),
 
   curso: validarCamposObrigatorios([

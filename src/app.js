@@ -8,7 +8,7 @@ const app = express();
 // Suporta múltiplas origens via FRONTEND_ORIGINS (vírgula-separado) ou fallback FRONTEND_ORIGIN
 const FRONTEND_ORIGINS = (
   process.env.FRONTEND_ORIGINS && process.env.FRONTEND_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)
-) || (process.env.FRONTEND_ORIGIN ? [process.env.FRONTEND_ORIGIN] : ['http://repo_ifpa-nginx-1:80', 'http://frontrepo:3000']);
+) || (process.env.FRONTEND_ORIGIN ? [process.env.FRONTEND_ORIGIN] : ['http://repo_ifpa-nginx-1:80', 'http://frontrepo:3000' , 'http://localhost:3000']);
 
 // If no explicit FRONTEND_ORIGINS or FRONTEND_ORIGIN provided, allow any origin
 const ALLOW_ANY_ORIGIN = !(process.env.FRONTEND_ORIGINS || process.env.FRONTEND_ORIGIN);

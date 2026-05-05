@@ -11,16 +11,17 @@ const getProfessoresTotal = async () => {
 };
 
 const inserirProfessor = async (professor) => {
-  const { nome_professor, matricula_professor, id_area, usuario_id, telefone } = professor;
+  const { nome_professor, matricula_professor, codigo_matricula, id_area, usuario_id, telefone } = professor;
 
   const query = `
-    INSERT INTO professores (nome_professor, matricula_professor, id_area, usuario_id, telefone)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO professores (nome_professor, matricula_professor, codigo_matricula, id_area, usuario_id, telefone)
+    VALUES (?, ?, ?, ?, ?, ?)
   `;
 
   const [result] = await connection.execute(query, [
     nome_professor || 'Professor sem nome',
-    matricula_professor || 0,
+    String(matricula_professor || ''),
+    String(codigo_matricula || ''),
     id_area || 1,
     usuario_id || null,
     telefone || ''

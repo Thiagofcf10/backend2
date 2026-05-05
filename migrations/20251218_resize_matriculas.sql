@@ -1,0 +1,4 @@
+
+ALTER TABLE alunos MODIFY COLUMN matricula_aluno VARCHAR(32) NOT NULL;
+ALTER TABLE professores MODIFY COLUMN matricula_professor VARCHAR(32) NOT NULL;
+ALTER TABLE projetos MODIFY COLUMN matricula_alunos VARCHAR(1024) NOT NULL;
